@@ -1,0 +1,1781 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>EcoImpact | Community Plastic Waste Management Platform</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+    
+    :root {
+      --primary: #087443;
+      --primary-dark: #073b29;
+      --accent: #0ca56a;
+      --mint: #eafff5;
+    }
+    
+    body {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      background-color: #f6f9f8;
+      color: #1a2e26;
+    }
+    
+    .glass-nav {
+      background: rgba(7, 59, 41, 0.93);
+      backdrop-filter: blur(12px);
+    }
+    
+    .custom-scrollbar::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-track {
+      background: #f1f1f1;
+      border-radius: 8px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+      background: #0ca56a;
+      border-radius: 8px;
+    }
+    
+    .map-canvas-container {
+      position: relative;
+      background: #e5efe9;
+      border-radius: 1rem;
+      overflow: hidden;
+    }
+
+    .pulse-dot {
+      box-shadow: 0 0 0 0 rgba(12, 165, 106, 0.7);
+      animation: pulse 1.8s infinite;
+    }
+
+    @keyframes pulse {
+      0% {
+        transform: scale(0.95);
+        box-shadow: 0 0 0 0 rgba(12, 165, 106, 0.7);
+      }
+      70% {
+        transform: scale(1);
+        box-shadow: 0 0 0 10px rgba(12, 165, 106, 0);
+      }
+      100% {
+        transform: scale(0.95);
+        box-shadow: 0 0 0 0 rgba(12, 165, 106, 0);
+      }
+    }
+
+    .modal-backdrop {
+      background: rgba(7, 45, 32, 0.85);
+      backdrop-filter: blur(8px);
+    }
+  </style>
+</head>
+<body class="flex flex-col min-h-screen">
+
+  <!-- AUTH GATEWAY OVERLAY (MANDATORY LOGIN ON OPENING) -->
+  <div id="mandatoryAuthOverlay" class="fixed inset-0 z-[100] modal-backdrop flex items-center justify-center p-4">
+    <div class="bg-white rounded-3xl max-w-md w-full shadow-2xl overflow-hidden border border-emerald-100 relative">
+      <div class="p-6 bg-emerald-900 text-white space-y-2 text-center">
+        <div class="w-12 h-12 rounded-2xl bg-emerald-500 text-emerald-950 font-black text-2xl flex items-center justify-center mx-auto shadow-lg">
+          ♻
+        </div>
+        <h3 class="text-2xl font-black">Welcome to EcoImpact</h3>
+        <p class="text-xs text-emerald-200">Please log in or create an account to access the platform</p>
+      </div>
+
+      <!-- Auth Tabs -->
+      <div class="flex border-b border-slate-200 text-xs font-extrabold">
+        <button id="gateTabLoginBtn" class="flex-1 py-3 text-center border-b-2 border-emerald-600 text-emerald-800 bg-emerald-50/50">
+          Log In
+        </button>
+        <button id="gateTabRegisterBtn" class="flex-1 py-3 text-center text-slate-500 hover:text-slate-800">
+          Register
+        </button>
+      </div>
+
+      <div class="p-6">
+        <!-- LOGIN FORM -->
+        <form id="gateLoginForm" class="space-y-4">
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">Email Address</label>
+            <input type="email" id="gateLoginEmail" required placeholder="user@ecoimpact.org" class="w-full text-xs font-semibold px-3 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-slate-50">
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">Password</label>
+            <input type="password" id="gateLoginPassword" required placeholder="••••••••" class="w-full text-xs font-semibold px-3 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-slate-50">
+          </div>
+          <button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold py-3 rounded-xl transition-all text-xs shadow-lg">
+            Log In & Enter Platform
+          </button>
+          
+          <div class="pt-2 text-center text-[11px] text-slate-500 bg-slate-50 p-3 rounded-xl border border-slate-200/80">
+            <strong>Demo Credentials:</strong><br>
+            User: <code class="text-emerald-700">user@ecoimpact.org</code> / <code class="text-emerald-700">123456</code><br>
+            Admin: <code class="text-emerald-700">admin@ecoimpact.org</code> / <code class="text-emerald-700">admin123</code>
+          </div>
+        </form>
+
+        <!-- REGISTER FORM -->
+        <form id="gateRegisterForm" class="hidden space-y-4">
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">Full Name</label>
+            <input type="text" id="gateRegName" required placeholder="Alex Mercer" class="w-full text-xs font-semibold px-3 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-slate-50">
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">Email Address</label>
+            <input type="email" id="gateRegEmail" required placeholder="alex@ecoimpact.org" class="w-full text-xs font-semibold px-3 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-slate-50">
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">Password</label>
+            <input type="password" id="gateRegPassword" required placeholder="••••••••" class="w-full text-xs font-semibold px-3 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-slate-50">
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">Role Type</label>
+            <select id="gateRegRole" class="w-full text-xs font-semibold px-3 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-slate-50">
+              <option value="USER">Community Reporter (User)</option>
+              <option value="ADMIN">System Administrator (Admin)</option>
+            </select>
+          </div>
+          <button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold py-3 rounded-xl transition-all text-xs shadow-lg">
+            Create Account & Enter
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- MAIN NAVIGATION BAR -->
+  <header class="glass-nav text-white sticky top-0 z-50 transition-all border-b border-emerald-800/40">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="flex items-center justify-between h-18 py-3">
+        
+        <a href="#home" class="flex items-center gap-3 group">
+          <span class="w-10 h-10 rounded-xl bg-emerald-500 text-emerald-950 font-black text-2xl flex items-center justify-center shadow-lg group-hover:scale-105 transition-transform">
+            ♻
+          </span>
+          <div>
+            <span class="font-extrabold text-xl tracking-tight text-white block leading-none">EcoImpact</span>
+            <span class="text-[10px] text-emerald-300 font-semibold tracking-wider uppercase">Plastic Waste Management</span>
+          </div>
+        </a>
+
+        <!-- Desktop Navigation Links -->
+        <nav class="hidden lg:flex items-center gap-6 font-semibold text-sm text-emerald-100">
+          <a href="#profile-section" class="hover:text-emerald-300 transition-colors flex items-center gap-1.5 text-emerald-300 font-bold"><i class="fa-solid fa-user-circle"></i> My Profile</a>
+          <a href="#map-section" class="hover:text-emerald-300 transition-colors flex items-center gap-1.5"><i class="fa-solid fa-map-location-dot"></i> Waste Map</a>
+          <a href="#report-section" class="hover:text-emerald-300 transition-colors flex items-center gap-1.5"><i class="fa-solid fa-file-circle-plus"></i> Report Waste</a>
+          <a href="#segregation-section" class="hover:text-emerald-300 transition-colors flex items-center gap-1.5"><i class="fa-solid fa-recycle"></i> Segregation Guide</a>
+          <a href="#impact-section" class="hover:text-emerald-300 transition-colors flex items-center gap-1.5"><i class="fa-solid fa-chart-line"></i> Statistics</a>
+          <a id="adminNavLink" href="#admin-section" class="hidden text-amber-300 hover:text-amber-200 font-bold transition-colors items-center gap-1.5 bg-amber-950/60 px-3 py-1.5 rounded-lg border border-amber-500/30">
+            <i class="fa-solid fa-user-shield"></i> Admin Panel
+          </a>
+        </nav>
+
+        <!-- Right Side User Controls -->
+        <div class="flex items-center gap-3">
+          
+          <!-- Database Status Indicator -->
+          <div id="dbStatusBadge" class="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-950/80 border border-emerald-500/30 text-[11px] font-bold text-emerald-300">
+            <span class="w-2 h-2 rounded-full bg-emerald-400"></span> DB Connected
+          </div>
+
+          <!-- Notifications Bell -->
+          <div class="relative">
+            <button id="notifBellBtn" class="p-2.5 rounded-xl bg-emerald-900/80 hover:bg-emerald-800 text-emerald-200 relative transition-colors focus:outline-none focus:ring-2 focus:ring-emerald-400" aria-label="Notifications">
+              <i class="fa-solid fa-bell text-lg"></i>
+              <span id="notifBadge" class="hidden absolute -top-1 -right-1 bg-rose-500 text-white text-[10px] font-black w-5 h-5 rounded-full flex items-center justify-center border-2 border-emerald-950">0</span>
+            </button>
+
+            <!-- Notifications Dropdown -->
+            <div id="notifDropdown" class="hidden absolute right-0 mt-3 w-80 sm:w-96 bg-white rounded-2xl shadow-2xl border border-emerald-100 text-slate-800 z-50 overflow-hidden">
+              <div class="p-3.5 bg-emerald-900 text-white flex items-center justify-between border-b border-emerald-800">
+                <span class="font-bold text-sm flex items-center gap-2"><i class="fa-solid fa-bell"></i> Notifications Log</span>
+                <button id="clearNotifsBtn" class="text-xs text-emerald-300 hover:underline">Clear all</button>
+              </div>
+              <div id="notifList" class="max-h-80 overflow-y-auto custom-scrollbar divide-y divide-slate-100 p-2 text-xs">
+                <p class="text-slate-400 p-4 text-center">No notifications yet.</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Logged In User Profile Widget -->
+          <div id="userProfileWidget" class="flex items-center gap-2"></div>
+
+          <!-- Mobile Menu Button -->
+          <button id="mobileMenuBtn" class="lg:hidden p-2 text-emerald-200 hover:text-white focus:outline-none" aria-label="Toggle Navigation">
+            <i class="fa-solid fa-bars text-2xl"></i>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Mobile Navigation Drawer -->
+    <div id="mobileDrawer" class="hidden lg:hidden bg-emerald-950 border-t border-emerald-800/60 px-4 pt-3 pb-6 space-y-3 font-semibold text-sm">
+      <a href="#profile-section" class="mobile-nav-link block py-2 px-3 rounded-lg hover:bg-emerald-900 text-emerald-300 font-bold"><i class="fa-solid fa-user-circle w-6"></i> My Profile</a>
+      <a href="#map-section" class="mobile-nav-link block py-2 px-3 rounded-lg hover:bg-emerald-900 text-emerald-100"><i class="fa-solid fa-map-location-dot w-6"></i> Waste Map</a>
+      <a href="#report-section" class="mobile-nav-link block py-2 px-3 rounded-lg hover:bg-emerald-900 text-emerald-100"><i class="fa-solid fa-file-circle-plus w-6"></i> Report Waste</a>
+      <a href="#segregation-section" class="mobile-nav-link block py-2 px-3 rounded-lg hover:bg-emerald-900 text-emerald-100"><i class="fa-solid fa-recycle w-6"></i> Segregation Guide</a>
+      <a href="#impact-section" class="mobile-nav-link block py-2 px-3 rounded-lg hover:bg-emerald-900 text-emerald-100"><i class="fa-solid fa-chart-line w-6"></i> Impact Statistics</a>
+      <a id="mobileAdminLink" href="#admin-section" class="hidden mobile-nav-link text-amber-300 py-2 px-3 rounded-lg bg-amber-950/60 border border-amber-500/30"><i class="fa-solid fa-user-shield w-6"></i> Admin Dashboard</a>
+    </div>
+  </header>
+
+  <!-- MAIN CONTENT CONTAINER -->
+  <main class="flex-grow space-y-12 pb-16">
+
+    <!-- HERO SECTION -->
+    <section class="bg-gradient-to-br from-emerald-900 via-emerald-800 to-teal-900 text-white relative overflow-hidden py-16 lg:py-20">
+      <div class="absolute inset-0 opacity-10 bg-[radial-gradient(#10b981_1px,transparent_1px)] [background-size:16px_16px]"></div>
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+        <div class="grid lg:grid-cols-12 gap-12 items-center">
+          
+          <div class="lg:col-span-7 space-y-6 text-center lg:text-left">
+            <span class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-emerald-500/20 border border-emerald-400/30 text-emerald-300 text-xs font-extrabold uppercase tracking-widest">
+              <span class="w-2 h-2 rounded-full bg-emerald-400 pulse-dot"></span> Persistent Database Powered Platform
+            </span>
+            <h1 class="text-4xl sm:text-5xl lg:text-6xl font-extrabold leading-tight tracking-tight">
+              Turn Plastic Waste into <span class="text-emerald-300 underline decoration-emerald-500/50 underline-offset-8">Measurable Action</span>
+            </h1>
+            <p class="text-emerald-100 text-base sm:text-lg max-w-2xl mx-auto lg:mx-0 font-normal">
+              Empowering students and local residents to locate, report, segregate, and monitor plastic waste. Track real-time collection updates and drive campus recycling metrics.
+            </p>
+            <div class="flex flex-wrap gap-4 justify-center lg:justify-start pt-2">
+              <a href="#profile-section" class="bg-emerald-400 hover:bg-emerald-300 text-emerald-950 font-extrabold px-6 py-3.5 rounded-xl shadow-lg transition-all flex items-center gap-2">
+                <i class="fa-solid fa-id-card"></i> View My Profile
+              </a>
+              <a href="#report-section" class="bg-white hover:bg-emerald-50 text-emerald-950 font-extrabold px-6 py-3.5 rounded-xl shadow-lg transition-all flex items-center gap-2">
+                <i class="fa-solid fa-plus-circle text-emerald-600"></i> Report Waste Spot
+              </a>
+              <a href="#map-section" class="bg-emerald-800/80 hover:bg-emerald-700 text-emerald-100 font-bold px-6 py-3.5 rounded-xl border border-emerald-500/40 transition-all flex items-center gap-2">
+                <i class="fa-solid fa-map"></i> View Waste Map
+              </a>
+            </div>
+          </div>
+
+          <!-- Quick Stat Cards Overlay -->
+          <div class="lg:col-span-5 grid grid-cols-2 gap-4">
+            <div class="bg-white/10 backdrop-blur-md border border-white/20 p-5 rounded-2xl text-center space-y-1 shadow-xl">
+              <div class="text-3xl font-black text-emerald-300" id="heroTotalReports">0</div>
+              <div class="text-xs font-bold text-emerald-100 uppercase tracking-wider">Reports Logged</div>
+            </div>
+            <div class="bg-white/10 backdrop-blur-md border border-white/20 p-5 rounded-2xl text-center space-y-1 shadow-xl">
+              <div class="text-3xl font-black text-teal-300" id="heroCollectedQty">0</div>
+              <div class="text-xs font-bold text-emerald-100 uppercase tracking-wider">Items Collected</div>
+            </div>
+            <div class="bg-white/10 backdrop-blur-md border border-white/20 p-5 rounded-2xl text-center space-y-1 shadow-xl">
+              <div class="text-3xl font-black text-amber-300" id="heroPendingQty">0</div>
+              <div class="text-xs font-bold text-emerald-100 uppercase tracking-wider">Pending Action</div>
+            </div>
+            <div class="bg-white/10 backdrop-blur-md border border-white/20 p-5 rounded-2xl text-center space-y-1 shadow-xl">
+              <div class="text-3xl font-black text-emerald-200" id="heroActiveUsers">0</div>
+              <div class="text-xs font-bold text-emerald-100 uppercase tracking-wider">Registered Users</div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </section>
+
+    <!-- SECTION: PERSONALISED USER PROFILE PAGE -->
+    <section id="profile-section" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4">
+      <div class="bg-white rounded-3xl shadow-xl border border-emerald-900/10 overflow-hidden">
+        
+        <!-- Profile Banner & Header -->
+        <div class="bg-gradient-to-r from-emerald-900 via-emerald-800 to-teal-900 text-white p-6 sm:p-8 relative">
+          <div class="flex flex-col sm:flex-row items-center sm:items-end gap-6 relative z-10">
+            <div id="profileAvatarBadge" class="w-24 h-24 sm:w-28 sm:h-28 rounded-3xl bg-emerald-500 text-emerald-950 font-black text-4xl flex items-center justify-center border-4 border-white shadow-2xl uppercase">
+              U
+            </div>
+            <div class="text-center sm:text-left space-y-1 flex-grow">
+              <div class="flex flex-wrap items-center justify-center sm:justify-start gap-2">
+                <h2 id="profileDisplayName" class="text-2xl sm:text-3xl font-black">User Profile</h2>
+                <span id="profileRoleBadge" class="px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-emerald-400 text-emerald-950 shadow-sm">
+                  Community Member
+                </span>
+              </div>
+              <p id="profileEmail" class="text-emerald-200 text-xs sm:text-sm font-semibold">user@ecoimpact.org</p>
+              <p class="text-[11px] text-emerald-300/80"><i class="fa-solid fa-calendar-check mr-1"></i> Active Platform Contributor</p>
+            </div>
+            <button id="profileLogoutBtn" class="bg-rose-500/20 hover:bg-rose-500/30 text-rose-200 border border-rose-400/30 font-bold px-4 py-2.5 rounded-xl text-xs transition-all flex items-center gap-2">
+              <i class="fa-solid fa-right-from-bracket"></i> Switch Account / Logout
+            </button>
+          </div>
+        </div>
+
+        <!-- Personal Contribution Stats Grid -->
+        <div class="p-6 sm:p-8 bg-slate-50 border-b border-slate-200">
+          <h3 class="text-xs font-black uppercase tracking-widest text-slate-400 mb-4">My Impact Summary</h3>
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-4">
+              <div class="w-12 h-12 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center text-xl font-bold">
+                <i class="fa-solid fa-paper-plane"></i>
+              </div>
+              <div>
+                <div id="userStatReports" class="text-2xl font-black text-slate-900">0</div>
+                <div class="text-xs font-bold text-slate-500">My Logged Reports</div>
+              </div>
+            </div>
+
+            <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-4">
+              <div class="w-12 h-12 rounded-xl bg-teal-100 text-teal-700 flex items-center justify-center text-xl font-bold">
+                <i class="fa-solid fa-recycle"></i>
+              </div>
+              <div>
+                <div id="userStatCollected" class="text-2xl font-black text-slate-900">0</div>
+                <div class="text-xs font-bold text-slate-500">Collected Plastic Items</div>
+              </div>
+            </div>
+
+            <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-4">
+              <div class="w-12 h-12 rounded-xl bg-amber-100 text-amber-700 flex items-center justify-center text-xl font-bold">
+                <i class="fa-solid fa-clock"></i>
+              </div>
+              <div>
+                <div id="userStatPending" class="text-2xl font-black text-slate-900">0</div>
+                <div class="text-xs font-bold text-slate-500">Pending Pickups</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="p-6 sm:p-8 grid lg:grid-cols-12 gap-8">
+          
+          <!-- Personal Submissions History -->
+          <div class="lg:col-span-8 space-y-4">
+            <div class="flex items-center justify-between">
+              <h3 class="text-base font-extrabold text-slate-900 flex items-center gap-2">
+                <i class="fa-solid fa-clock-rotate-left text-emerald-600"></i> My Submitted Waste Reports
+              </h3>
+              <a href="#report-section" class="text-xs font-extrabold text-emerald-700 hover:underline">+ New Report</a>
+            </div>
+
+            <div class="overflow-x-auto rounded-2xl border border-slate-200 bg-white">
+              <table class="w-full text-left text-xs text-slate-600">
+                <thead class="bg-slate-100 text-slate-700 font-extrabold uppercase border-b border-slate-200">
+                  <tr>
+                    <th class="p-3">Location & ID</th>
+                    <th class="p-3">Plastic Details</th>
+                    <th class="p-3">Status</th>
+                    <th class="p-3 text-right">View Pin</th>
+                  </tr>
+                </thead>
+                <tbody id="userReportsTableBody" class="divide-y divide-slate-100 font-medium">
+                  <!-- Dynamic Rows -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Account Settings Form -->
+          <div class="lg:col-span-4 bg-slate-50 rounded-2xl p-5 border border-slate-200 space-y-4">
+            <h3 class="text-sm font-extrabold text-slate-900 flex items-center gap-2 border-b border-slate-200 pb-3">
+              <i class="fa-solid fa-user-gear text-emerald-600"></i> Profile Settings
+            </h3>
+
+            <form id="updateProfileForm" class="space-y-3">
+              <div>
+                <label class="block text-xs font-bold text-slate-700 mb-1">Full Name</label>
+                <input type="text" id="editProfileName" required class="w-full text-xs font-semibold px-3 py-2 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-white">
+              </div>
+
+              <div>
+                <label class="block text-xs font-bold text-slate-700 mb-1">Update Password</label>
+                <input type="password" id="editProfilePassword" placeholder="Leave blank to keep unchanged" class="w-full text-xs font-semibold px-3 py-2 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-white">
+              </div>
+
+              <button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold py-2.5 rounded-xl transition-all text-xs shadow-md">
+                Save Profile Changes
+              </button>
+            </form>
+          </div>
+
+        </div>
+
+      </div>
+    </section>
+
+    <!-- SECTION 1: INTERACTIVE MAP & RECENT DISPATCHES -->
+    <section id="map-section" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4">
+      <div class="bg-white rounded-3xl shadow-xl border border-emerald-900/10 overflow-hidden">
+        
+        <!-- Header Controls -->
+        <div class="p-6 bg-slate-900 text-white flex flex-col md:flex-row items-start md:items-center justify-between gap-4 border-b border-slate-800">
+          <div>
+            <span class="text-emerald-400 font-bold text-xs uppercase tracking-widest block">Geospatial Tracking</span>
+            <h2 class="text-2xl font-black">Interactive Waste Cluster Map</h2>
+          </div>
+          
+          <div class="flex flex-wrap items-center gap-3 w-full md:w-auto">
+            <select id="mapFilterStatus" class="bg-slate-800 text-white text-xs font-bold rounded-xl px-3 py-2 border border-slate-700 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+              <option value="ALL">All Collection Statuses</option>
+              <option value="Pending">Pending Only</option>
+              <option value="In Progress">In Progress Only</option>
+              <option value="Collected">Collected Only</option>
+            </select>
+            <button id="resetMapZoomBtn" class="bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold px-3 py-2 rounded-xl transition-colors flex items-center gap-1.5">
+              <i class="fa-solid fa-arrows-to-eye"></i> Reset View
+            </button>
+          </div>
+        </div>
+
+        <div class="grid lg:grid-cols-12">
+          
+          <!-- Interactive Map Canvas Container -->
+          <div class="lg:col-span-8 p-4 bg-slate-100 relative min-h-[420px] flex flex-col justify-between">
+            <div class="map-canvas-container h-[450px] w-full border border-slate-300 shadow-inner relative">
+              <canvas id="wasteMapCanvas" class="w-full h-full cursor-crosshair block"></canvas>
+              
+              <!-- Map Instruction Banner -->
+              <div class="absolute top-3 left-3 bg-slate-900/85 backdrop-blur-md text-white px-3 py-1.5 rounded-lg text-xs font-medium border border-slate-700 flex items-center gap-2 pointer-events-none">
+                <i class="fa-solid fa-circle-info text-emerald-400"></i> Click pins for details or click map to pick coordinates for a new report
+              </div>
+
+              <!-- Legend Overlay -->
+              <div class="absolute bottom-3 right-3 bg-white/90 backdrop-blur-md p-2.5 rounded-xl shadow-md border border-slate-200 text-[11px] font-bold space-y-1">
+                <div class="flex items-center gap-2"><span class="w-3 h-3 rounded-full bg-rose-500 inline-block"></span> Pending Pick</div>
+                <div class="flex items-center gap-2"><span class="w-3 h-3 rounded-full bg-amber-500 inline-block"></span> In Progress</div>
+                <div class="flex items-center gap-2"><span class="w-3 h-3 rounded-full bg-emerald-600 inline-block"></span> Collected</div>
+              </div>
+            </div>
+
+            <div class="mt-3 flex items-center justify-between text-xs text-slate-500 font-medium px-1">
+              <span>Selected Pin Coordinates: <strong id="mapSelectedCoords" class="text-slate-800">None selected (Click canvas)</strong></span>
+            </div>
+          </div>
+
+          <!-- Map Sidebar: Selected Item Popup Detail Card -->
+          <div class="lg:col-span-4 p-6 bg-white border-t lg:border-t-0 lg:border-l border-slate-200 flex flex-col justify-between">
+            <div>
+              <h3 class="text-xs font-extrabold uppercase text-slate-400 tracking-wider mb-3">Marker Focus Detail</h3>
+              
+              <div id="mapDetailCard" class="bg-slate-50 border border-slate-200 rounded-2xl p-5 space-y-4">
+                <div class="text-center py-8 text-slate-400 space-y-2">
+                  <i class="fa-solid fa-map-pin text-3xl text-slate-300"></i>
+                  <p class="text-xs font-medium">Click on any map marker to view detailed report info and collection route preview.</p>
+                </div>
+              </div>
+            </div>
+
+            <div class="pt-4 border-t border-slate-100 text-center">
+              <span class="text-[11px] text-slate-400">Map updates automatically as new database reports are filed.</span>
+            </div>
+          </div>
+
+        </div>
+
+      </div>
+    </section>
+
+    <!-- SECTION 2: SUBMIT WASTE REPORT FORM & SEARCHABLE DISPATCH TABLE -->
+    <section id="report-section" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4">
+      <div class="grid lg:grid-cols-12 gap-8 items-start">
+        
+        <!-- REPORT SUBMISSION FORM CARD -->
+        <div class="lg:col-span-5 bg-white rounded-3xl p-6 sm:p-8 shadow-xl border border-emerald-900/10 space-y-6">
+          <div class="space-y-1">
+            <span class="text-xs font-extrabold text-emerald-600 uppercase tracking-widest">Community Action</span>
+            <h2 class="text-2xl font-black text-slate-900">File Waste Report</h2>
+            <p class="text-xs text-slate-500">Log plastic waste observations directly into the database.</p>
+          </div>
+
+          <form id="wasteReportForm" class="space-y-4">
+            
+            <div class="grid grid-cols-2 gap-4">
+              <div>
+                <label class="block text-xs font-bold text-slate-700 mb-1">Reporter Name *</label>
+                <input type="text" id="formReporterName" required readonly class="w-full text-xs font-bold px-3 py-2.5 rounded-xl border border-slate-200 bg-slate-100 text-slate-700">
+              </div>
+              <div>
+                <label class="block text-xs font-bold text-slate-700 mb-1">Location / Landmark *</label>
+                <input type="text" id="formLocation" required placeholder="Main Canteen Block" class="w-full text-xs font-semibold px-3 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-slate-50">
+              </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-4">
+              <div>
+                <label class="block text-xs font-bold text-slate-700 mb-1">Map Geo X (%)</label>
+                <input type="number" id="formGeoX" min="5" max="95" step="0.1" placeholder="Auto / Click Map" class="w-full text-xs font-semibold px-3 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-slate-50">
+              </div>
+              <div>
+                <label class="block text-xs font-bold text-slate-700 mb-1">Map Geo Y (%)</label>
+                <input type="number" id="formGeoY" min="5" max="95" step="0.1" placeholder="Auto / Click Map" class="w-full text-xs font-semibold px-3 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-slate-50">
+              </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-4">
+              <div>
+                <label class="block text-xs font-bold text-slate-700 mb-1">Plastic Type *</label>
+                <select id="formPlasticType" required class="w-full text-xs font-semibold px-3 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-slate-50">
+                  <option value="">Select Type...</option>
+                  <option value="PET Bottles">PET Bottles</option>
+                  <option value="Single-Use Bags">Single-Use Bags</option>
+                  <option value="Food Packaging">Food Packaging</option>
+                  <option value="Cups & Cutlery">Cups & Cutlery</option>
+                  <option value="Multi-Layer Wrapper">Multi-Layer Wrapper</option>
+                  <option value="Hard Plastics">Hard Plastics</option>
+                  <option value="Other">Other</option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-xs font-bold text-slate-700 mb-1">Approx Item Count *</label>
+                <input type="number" id="formQuantity" min="1" required placeholder="e.g. 15" class="w-full text-xs font-semibold px-3 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-slate-50">
+              </div>
+            </div>
+
+            <div>
+              <label class="block text-xs font-bold text-slate-700 mb-1">Segregation Bin Category *</label>
+              <div class="grid grid-cols-4 gap-2 text-xs font-bold">
+                <label class="cursor-pointer">
+                  <input type="radio" name="formCategory" value="dry" checked class="peer sr-only">
+                  <div class="p-2 text-center rounded-xl border border-slate-200 peer-checked:bg-blue-600 peer-checked:text-white peer-checked:border-blue-600 transition-all">
+                    🔵 Dry
+                  </div>
+                </label>
+                <label class="cursor-pointer">
+                  <input type="radio" name="formCategory" value="wet" class="peer sr-only">
+                  <div class="p-2 text-center rounded-xl border border-slate-200 peer-checked:bg-emerald-600 peer-checked:text-white peer-checked:border-emerald-600 transition-all">
+                    🟢 Wet
+                  </div>
+                </label>
+                <label class="cursor-pointer">
+                  <input type="radio" name="formCategory" value="mixed" class="peer sr-only">
+                  <div class="p-2 text-center rounded-xl border border-slate-200 peer-checked:bg-amber-500 peer-checked:text-white peer-checked:border-amber-500 transition-all">
+                    🟡 Mixed
+                  </div>
+                </label>
+                <label class="cursor-pointer">
+                  <input type="radio" name="formCategory" value="hazardous" class="peer sr-only">
+                  <div class="p-2 text-center rounded-xl border border-slate-200 peer-checked:bg-rose-600 peer-checked:text-white peer-checked:border-rose-600 transition-all">
+                    🔴 Haz
+                  </div>
+                </label>
+              </div>
+            </div>
+
+            <!-- Image Upload Box with Drag & Drop -->
+            <div>
+              <label class="block text-xs font-bold text-slate-700 mb-1">Photo Attachment (Optional)</label>
+              <div id="dropZone" class="border-2 border-dashed border-slate-200 rounded-2xl p-4 text-center bg-slate-50 hover:bg-emerald-50/50 hover:border-emerald-400 transition-all cursor-pointer relative">
+                <input type="file" id="formPhoto" accept="image/*" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer">
+                <div id="uploadPrompt" class="space-y-1">
+                  <i class="fa-solid fa-cloud-arrow-up text-2xl text-emerald-600"></i>
+                  <p class="text-xs font-bold text-slate-700">Drag & drop photo or click to upload</p>
+                  <p class="text-[10px] text-slate-400">PNG, JPG up to 5MB</p>
+                </div>
+                <div id="uploadPreviewContainer" class="hidden flex items-center gap-3 text-left">
+                  <img id="uploadImgPreview" class="w-12 h-12 rounded-xl object-cover border border-slate-200">
+                  <div class="flex-grow min-w-0">
+                    <p id="uploadFileName" class="text-xs font-bold text-slate-800 truncate"></p>
+                    <button type="button" id="removePhotoBtn" class="text-[10px] text-rose-600 font-extrabold hover:underline">Remove Photo</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <label class="block text-xs font-bold text-slate-700 mb-1">Additional Notes</label>
+              <textarea id="formNotes" rows="2" placeholder="e.g. Near recycling container, overflowing..." class="w-full text-xs font-semibold px-3 py-2 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-slate-50"></textarea>
+            </div>
+
+            <button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold py-3 rounded-xl transition-all shadow-lg flex items-center justify-center gap-2">
+              <i class="fa-solid fa-paper-plane"></i> Submit Waste Report
+            </button>
+          </form>
+        </div>
+
+        <!-- SEARCH, FILTERABLE REPORTS & EXPORTS TABLE -->
+        <div class="lg:col-span-7 bg-white rounded-3xl p-6 sm:p-8 shadow-xl border border-emerald-900/10 space-y-6">
+          
+          <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <div>
+              <span class="text-xs font-extrabold text-emerald-600 uppercase tracking-widest">Master Database</span>
+              <h2 class="text-2xl font-black text-slate-900">Submitted Reports</h2>
+            </div>
+            
+            <!-- Export Buttons -->
+            <div class="flex items-center gap-2">
+              <button id="exportCsvBtn" class="bg-emerald-100 hover:bg-emerald-200 text-emerald-900 text-xs font-extrabold px-3 py-2 rounded-xl border border-emerald-300 transition-all flex items-center gap-1.5">
+                <i class="fa-solid fa-file-excel text-emerald-700"></i> Export CSV
+              </button>
+              <button id="exportJsonBtn" class="bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-extrabold px-3 py-2 rounded-xl border border-slate-300 transition-all flex items-center gap-1.5">
+                <i class="fa-solid fa-file-code text-slate-600"></i> Export JSON
+              </button>
+            </div>
+          </div>
+
+          <!-- Dynamic Search & Multi-Criteria Filter Bar -->
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 bg-slate-50 p-3 rounded-2xl border border-slate-200">
+            <div class="sm:col-span-3">
+              <div class="relative">
+                <i class="fa-solid fa-magnifying-glass absolute left-3 top-3 text-slate-400 text-xs"></i>
+                <input type="search" id="reportSearchKeyword" placeholder="Search by location, reporter, notes..." class="w-full text-xs font-semibold pl-9 pr-3 py-2 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-white">
+              </div>
+            </div>
+            <div>
+              <select id="reportFilterType" class="w-full text-xs font-semibold px-2.5 py-2 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-white">
+                <option value="ALL">All Plastic Types</option>
+                <option value="PET Bottles">PET Bottles</option>
+                <option value="Single-Use Bags">Single-Use Bags</option>
+                <option value="Food Packaging">Food Packaging</option>
+                <option value="Cups & Cutlery">Cups & Cutlery</option>
+                <option value="Multi-Layer Wrapper">Multi-Layer Wrapper</option>
+                <option value="Hard Plastics">Hard Plastics</option>
+              </select>
+            </div>
+            <div>
+              <select id="reportFilterStatus" class="w-full text-xs font-semibold px-2.5 py-2 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-white">
+                <option value="ALL">All Statuses</option>
+                <option value="Pending">Pending</option>
+                <option value="In Progress">In Progress</option>
+                <option value="Collected">Collected</option>
+              </select>
+            </div>
+            <div>
+              <select id="reportFilterCategory" class="w-full text-xs font-semibold px-2.5 py-2 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-white">
+                <option value="ALL">All Bin Categories</option>
+                <option value="dry">Dry Waste</option>
+                <option value="wet">Wet Waste</option>
+                <option value="mixed">Mixed Waste</option>
+                <option value="hazardous">Hazardous</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Reports Data Table -->
+          <div class="overflow-x-auto rounded-2xl border border-slate-200">
+            <table class="w-full text-left text-xs text-slate-600">
+              <thead class="bg-slate-100 text-slate-700 font-extrabold uppercase border-b border-slate-200">
+                <tr>
+                  <th class="p-3">ID & Location</th>
+                  <th class="p-3">Type & Quantity</th>
+                  <th class="p-3">Bin Category</th>
+                  <th class="p-3">Status</th>
+                  <th class="p-3 text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody id="reportsTableBody" class="divide-y divide-slate-100 font-medium">
+                <!-- Dynamic Rows -->
+              </tbody>
+            </table>
+          </div>
+
+        </div>
+
+      </div>
+    </section>
+
+    <!-- SECTION 3: ADMIN DASHBOARD (ROLE PROTECTED) -->
+    <section id="admin-section" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4">
+      <div id="adminPanelWrapper" class="bg-slate-900 text-white rounded-3xl p-6 sm:p-8 shadow-2xl space-y-8 border border-amber-500/30">
+        
+        <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 border-b border-slate-800 pb-6">
+          <div>
+            <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-500/20 border border-amber-400/40 text-amber-300 text-xs font-black uppercase tracking-widest">
+              <i class="fa-solid fa-user-shield"></i> Executive Management
+            </span>
+            <h2 class="text-3xl font-black mt-1">Admin Operations Center</h2>
+          </div>
+          <div class="text-xs text-slate-400 flex items-center gap-2">
+            <span>Logged as: <strong id="adminUserBadge" class="text-amber-300">System Admin</strong></span>
+          </div>
+        </div>
+
+        <!-- Admin Quick Controls & Status Dispatch Grid -->
+        <div class="grid lg:grid-cols-12 gap-8">
+          
+          <!-- Dispatch Queue -->
+          <div class="lg:col-span-8 space-y-4">
+            <h3 class="text-sm font-extrabold text-amber-300 uppercase tracking-wider flex items-center gap-2">
+              <i class="fa-solid fa-list-check"></i> Collection Status Dispatch Queue
+            </h3>
+
+            <div class="overflow-x-auto rounded-2xl border border-slate-800 bg-slate-950/60">
+              <table class="w-full text-left text-xs text-slate-300">
+                <thead class="bg-slate-800/80 text-amber-200 font-extrabold uppercase border-b border-slate-700">
+                  <tr>
+                    <th class="p-3">Report</th>
+                    <th class="p-3">Reporter</th>
+                    <th class="p-3">Current Status</th>
+                    <th class="p-3">Change Status</th>
+                    <th class="p-3 text-right">Delete</th>
+                  </tr>
+                </thead>
+                <tbody id="adminQueueTableBody" class="divide-y divide-slate-800 font-medium">
+                  <!-- Dynamic Admin Dispatch Rows -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Audit Activity Logs -->
+          <div class="lg:col-span-4 space-y-4">
+            <h3 class="text-sm font-extrabold text-amber-300 uppercase tracking-wider flex items-center gap-2">
+              <i class="fa-solid fa-clock-rotate-left"></i> Real-time Collection Log
+            </h3>
+            <div id="adminActivityLog" class="bg-slate-950/80 border border-slate-800 rounded-2xl p-4 h-80 overflow-y-auto custom-scrollbar text-xs font-mono space-y-2">
+              <!-- Dynamic Log entries -->
+            </div>
+          </div>
+
+        </div>
+
+      </div>
+    </section>
+
+    <!-- SECTION 4: SEGREGATION GUIDE & BIN FINDER -->
+    <section id="segregation-section" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4">
+      <div class="bg-white rounded-3xl p-6 sm:p-8 shadow-xl border border-emerald-900/10 space-y-8">
+        
+        <div class="text-center max-w-2xl mx-auto space-y-2">
+          <span class="text-xs font-extrabold text-emerald-600 uppercase tracking-widest">Segregation Guide</span>
+          <h2 class="text-3xl font-black text-slate-900">Dry vs Wet Waste Rules</h2>
+          <p class="text-xs text-slate-500">Correct bin segregation prevents plastic contamination and drastically increases recycling success rates.</p>
+        </div>
+
+        <div class="grid md:grid-cols-2 gap-6">
+          
+          <!-- Dry Bin Card -->
+          <div class="bg-blue-50/60 border-2 border-blue-200 rounded-3xl p-6 space-y-4">
+            <div class="flex items-center gap-3 border-b border-blue-200 pb-4">
+              <span class="w-12 h-12 rounded-2xl bg-blue-600 text-white flex items-center justify-center text-2xl font-black shadow-md">🔵</span>
+              <div>
+                <h3 class="text-xl font-extrabold text-blue-950">Dry Waste Bin</h3>
+                <span class="text-xs font-bold text-blue-700">Recyclables, Non-biodegradables</span>
+              </div>
+            </div>
+            <div class="space-y-2">
+              <h4 class="text-xs font-extrabold text-blue-900 uppercase">Accepted Materials:</h4>
+              <div class="flex flex-wrap gap-1.5">
+                <span class="px-2.5 py-1 rounded-full bg-white text-blue-900 border border-blue-200 text-xs font-bold">Plastic Bottles</span>
+                <span class="px-2.5 py-1 rounded-full bg-white text-blue-900 border border-blue-200 text-xs font-bold">Carry Bags</span>
+                <span class="px-2.5 py-1 rounded-full bg-white text-blue-900 border border-blue-200 text-xs font-bold">Wrappers</span>
+                <span class="px-2.5 py-1 rounded-full bg-white text-blue-900 border border-blue-200 text-xs font-bold">Paper & Boxes</span>
+                <span class="px-2.5 py-1 rounded-full bg-white text-blue-900 border border-blue-200 text-xs font-bold">Glass & Cans</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Wet Bin Card -->
+          <div class="bg-emerald-50/60 border-2 border-emerald-200 rounded-3xl p-6 space-y-4">
+            <div class="flex items-center gap-3 border-b border-emerald-200 pb-4">
+              <span class="w-12 h-12 rounded-2xl bg-emerald-600 text-white flex items-center justify-center text-2xl font-black shadow-md">🟢</span>
+              <div>
+                <h3 class="text-xl font-extrabold text-emerald-950">Wet Waste Bin</h3>
+                <span class="text-xs font-bold text-emerald-700">Organic & Compostable</span>
+              </div>
+            </div>
+            <div class="space-y-2">
+              <h4 class="text-xs font-extrabold text-emerald-900 uppercase">Accepted Materials:</h4>
+              <div class="flex flex-wrap gap-1.5">
+                <span class="px-2.5 py-1 rounded-full bg-white text-emerald-900 border border-emerald-200 text-xs font-bold">Food Scraps</span>
+                <span class="px-2.5 py-1 rounded-full bg-white text-emerald-900 border border-emerald-200 text-xs font-bold">Fruit Peels</span>
+                <span class="px-2.5 py-1 rounded-full bg-white text-emerald-900 border border-emerald-200 text-xs font-bold">Tea Leaves</span>
+                <span class="px-2.5 py-1 rounded-full bg-white text-emerald-900 border border-emerald-200 text-xs font-bold">Garden Leaves</span>
+                <span class="px-2.5 py-1 rounded-full bg-white text-emerald-900 border border-emerald-200 text-xs font-bold">Eggshells</span>
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Interactive Bin Finder -->
+        <div class="bg-emerald-900 text-white rounded-3xl p-6 sm:p-8 space-y-4">
+          <h3 class="text-lg font-black flex items-center gap-2">
+            <i class="fa-solid fa-circle-question text-emerald-400"></i> Interactive Bin Finder
+          </h3>
+          <p class="text-xs text-emerald-200">Click any common item below to instantly discover its target bin and disposal method:</p>
+
+          <div id="binFinderButtons" class="flex flex-wrap gap-2 pt-2">
+            <!-- Dynamic Buttons generated via JS -->
+          </div>
+
+          <div id="binFinderResult" class="bg-white/10 border border-white/20 rounded-2xl p-4 text-xs font-semibold text-emerald-100 flex items-start gap-3">
+            <i class="fa-solid fa-lightbulb text-amber-300 text-lg flex-shrink-0 mt-0.5"></i>
+            <div>
+              <strong id="binFinderTitle" class="block text-white text-sm">Select an item above</strong>
+              <span id="binFinderDesc">Instant bin recommendations will appear here.</span>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- SECTION 5: ANALYTICS & STATISTICAL CHARTS -->
+    <section id="impact-section" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4">
+      <div class="bg-white rounded-3xl p-6 sm:p-8 shadow-xl border border-emerald-900/10 space-y-8">
+        
+        <div class="text-center max-w-2xl mx-auto space-y-2">
+          <span class="text-xs font-extrabold text-emerald-600 uppercase tracking-widest">Impact Analytics</span>
+          <h2 class="text-3xl font-black text-slate-900">Plastic Reduction Trends</h2>
+          <p class="text-xs text-slate-500">Live visualization calculated from real client database records.</p>
+        </div>
+
+        <div class="grid lg:grid-cols-2 gap-8">
+          
+          <!-- Plastic Category Distribution Chart -->
+          <div class="bg-slate-50 p-5 rounded-2xl border border-slate-200 space-y-3">
+            <h3 class="text-xs font-extrabold uppercase text-slate-700 tracking-wider">Plastic Types Distribution</h3>
+            <div class="h-64 relative">
+              <canvas id="categoryChart"></canvas>
+            </div>
+          </div>
+
+          <!-- Collection Progress Trend Chart -->
+          <div class="bg-slate-50 p-5 rounded-2xl border border-slate-200 space-y-3">
+            <h3 class="text-xs font-extrabold uppercase text-slate-700 tracking-wider">Collection Status Ratios</h3>
+            <div class="h-64 relative">
+              <canvas id="statusChart"></canvas>
+            </div>
+          </div>
+
+        </div>
+
+      </div>
+    </section>
+
+  </main>
+
+  <!-- FOOTER -->
+  <footer class="bg-emerald-950 text-emerald-200 border-t border-emerald-900 text-xs py-10">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
+      <div class="flex flex-col md:flex-row items-center justify-between gap-4 text-center md:text-left">
+        <div class="space-y-1">
+          <span class="text-white font-extrabold text-base flex items-center justify-center md:justify-start gap-2">
+            ♻ EcoImpact Project
+          </span>
+          <p class="text-emerald-400">Community Plastic Waste Reduction & Segregation Initiative</p>
+        </div>
+        <p class="text-emerald-400">CEP - 2nd Year Engineering Student Innovation</p>
+      </div>
+      <div class="border-t border-emerald-900/80 pt-6 text-center text-emerald-500">
+        &copy; 2026 EcoImpact Platform. Powered by client-side IndexedDB persistence.
+      </div>
+    </div>
+  </footer>
+
+  <!-- TOAST NOTIFICATION STACK CONTAINER -->
+  <div id="toastContainer" class="fixed bottom-5 right-5 z-50 flex flex-col gap-2 max-w-sm pointer-events-none"></div>
+
+  <!-- JAVASCRIPT APPLICATION & DATABASE ENGINE LOGIC -->
+  <script>
+    /* ==========================================================================
+       1. DATABASE ENGINE ARCHITECTURE (INDEXEDDB WITH LOCALSTORAGE FALLBACK)
+       ========================================================================== */
+    const DB_NAME = 'EcoImpact_DB_v4';
+    const DB_VERSION = 1;
+    let dbInstance = null;
+
+    const INITIAL_USERS = [
+      { id: 'u1', name: 'Standard User', email: 'user@ecoimpact.org', password: '123456', role: 'USER' },
+      { id: 'u2', name: 'System Admin', email: 'admin@ecoimpact.org', password: 'admin123', role: 'ADMIN' }
+    ];
+
+    const INITIAL_REPORTS = [
+      {
+        id: 'rep-101',
+        reporterName: 'Standard User',
+        reporterEmail: 'user@ecoimpact.org',
+        location: 'Campus Canteen Block B',
+        geoX: 30,
+        geoY: 40,
+        plasticType: 'PET Bottles',
+        quantity: 25,
+        category: 'dry',
+        status: 'Pending',
+        notes: 'Overflowing bin near entrance',
+        photoData: null,
+        createdAt: new Date(Date.now() - 3600000 * 5).toISOString()
+      },
+      {
+        id: 'rep-102',
+        reporterName: 'Priya Patel',
+        reporterEmail: 'priya@ecoimpact.org',
+        location: 'Engineering Library Lawn',
+        geoX: 65,
+        geoY: 25,
+        plasticType: 'Single-Use Bags',
+        quantity: 12,
+        category: 'dry',
+        status: 'In Progress',
+        notes: 'Plastic wrappers scattered by wind',
+        photoData: null,
+        createdAt: new Date(Date.now() - 3600000 * 24).toISOString()
+      },
+      {
+        id: 'rep-103',
+        reporterName: 'Standard User',
+        reporterEmail: 'user@ecoimpact.org',
+        location: 'Sports Complex Gate 2',
+        geoX: 80,
+        geoY: 70,
+        plasticType: 'Cups & Cutlery',
+        quantity: 40,
+        category: 'mixed',
+        status: 'Collected',
+        notes: 'Post-event cleanup report',
+        photoData: null,
+        createdAt: new Date(Date.now() - 3600000 * 48).toISOString()
+      }
+    ];
+
+    function initDatabase() {
+      return new Promise((resolve) => {
+        if (!window.indexedDB) {
+          console.warn('IndexedDB not supported; using localStorage fallback');
+          seedLocalStorageFallback();
+          resolve(false);
+          return;
+        }
+
+        const request = indexedDB.open(DB_NAME, DB_VERSION);
+
+        request.onupgradeneeded = (e) => {
+          const db = e.target.result;
+          if (!db.objectStoreNames.contains('reports')) {
+            db.createObjectStore('reports', { keyPath: 'id' });
+          }
+          if (!db.objectStoreNames.contains('users')) {
+            db.createObjectStore('users', { keyPath: 'id' });
+          }
+        };
+
+        request.onsuccess = (e) => {
+          dbInstance = e.target.result;
+          seedDatabaseIfEmpty().then(() => resolve(true));
+        };
+
+        request.onerror = (e) => {
+          console.error('IndexedDB open error:', e);
+          seedLocalStorageFallback();
+          resolve(false);
+        };
+      });
+    }
+
+    function seedLocalStorageFallback() {
+      if (!localStorage.getItem('eco_reports')) {
+        localStorage.setItem('eco_reports', JSON.stringify(INITIAL_REPORTS));
+      }
+      if (!localStorage.getItem('eco_users')) {
+        localStorage.setItem('eco_users', JSON.stringify(INITIAL_USERS));
+      }
+    }
+
+    async function seedDatabaseIfEmpty() {
+      const reports = await dbGetAll('reports');
+      if (reports.length === 0) {
+        for (const rep of INITIAL_REPORTS) await dbPut('reports', rep);
+      }
+      const users = await dbGetAll('users');
+      if (users.length === 0) {
+        for (const u of INITIAL_USERS) await dbPut('users', u);
+      }
+    }
+
+    function dbPut(storeName, item) {
+      return new Promise((resolve) => {
+        if (!dbInstance) {
+          const items = JSON.parse(localStorage.getItem('eco_' + storeName) || '[]');
+          const idx = items.findIndex(x => x.id === item.id);
+          if (idx >= 0) items[idx] = item; else items.push(item);
+          localStorage.setItem('eco_' + storeName, JSON.stringify(items));
+          resolve(item);
+          return;
+        }
+        const tx = dbInstance.transaction(storeName, 'readwrite');
+        const store = tx.objectStore(storeName);
+        store.put(item);
+        tx.oncomplete = () => resolve(item);
+      });
+    }
+
+    function dbGetAll(storeName) {
+      return new Promise((resolve) => {
+        if (!dbInstance) {
+          const items = JSON.parse(localStorage.getItem('eco_' + storeName) || '[]');
+          resolve(items);
+          return;
+        }
+        const tx = dbInstance.transaction(storeName, 'readonly');
+        const store = tx.objectStore(storeName);
+        const req = store.getAll();
+        req.onsuccess = () => resolve(req.result || []);
+        req.onerror = () => resolve([]);
+      });
+    }
+
+    function dbDelete(storeName, id) {
+      return new Promise((resolve) => {
+        if (!dbInstance) {
+          let items = JSON.parse(localStorage.getItem('eco_' + storeName) || '[]');
+          items = items.filter(x => x.id !== id);
+          localStorage.setItem('eco_' + storeName, JSON.stringify(items));
+          resolve(true);
+          return;
+        }
+        const tx = dbInstance.transaction(storeName, 'readwrite');
+        const store = tx.objectStore(storeName);
+        store.delete(id);
+        tx.oncomplete = () => resolve(true);
+      });
+    }
+
+    /* ==========================================================================
+       2. STATE MANAGEMENT & MANDATORY AUTH CONTROL
+       ========================================================================== */
+    let currentUser = null;
+    let reportsData = [];
+    let notifsList = [];
+    let activityLogs = [];
+    let selectedMapPoint = null;
+
+    function loadSession() {
+      const savedUser = localStorage.getItem('eco_current_user');
+      if (savedUser) {
+        try { currentUser = JSON.parse(savedUser); } catch(e) { currentUser = null; }
+      }
+      checkAuthGateway();
+    }
+
+    function setCurrentUser(user) {
+      currentUser = user;
+      if (user) {
+        localStorage.setItem('eco_current_user', JSON.stringify(user));
+      } else {
+        localStorage.removeItem('eco_current_user');
+      }
+      checkAuthGateway();
+    }
+
+    function checkAuthGateway() {
+      const overlay = document.getElementById('mandatoryAuthOverlay');
+      if (!currentUser) {
+        overlay.classList.remove('hidden');
+      } else {
+        overlay.classList.add('hidden');
+        updateAuthUI();
+      }
+    }
+
+    function updateAuthUI() {
+      const widget = document.getElementById('userProfileWidget');
+      const adminNav = document.getElementById('adminNavLink');
+      const mobileAdminNav = document.getElementById('mobileAdminLink');
+
+      if (currentUser) {
+        const initial = currentUser.name.charAt(0).toUpperCase();
+        widget.innerHTML = `
+          <a href="#profile-section" class="flex items-center gap-2 bg-emerald-900/80 hover:bg-emerald-800/90 border border-emerald-500/30 p-1.5 pr-3 rounded-xl transition-all">
+            <span class="w-7 h-7 rounded-lg bg-emerald-400 text-emerald-950 font-black flex items-center justify-center text-xs">
+              ${initial}
+            </span>
+            <div class="hidden sm:block text-left leading-tight">
+              <span class="text-xs font-bold text-white block">${currentUser.name}</span>
+              <span class="text-[9px] text-emerald-300 font-semibold uppercase">${currentUser.role}</span>
+            </div>
+          </a>
+          <button id="logoutBtn" class="bg-emerald-800 hover:bg-emerald-700 text-emerald-100 text-xs font-bold px-3 py-2 rounded-xl border border-emerald-500/30 transition-all">
+            <i class="fa-solid fa-right-from-bracket"></i>
+          </button>
+        `;
+
+        document.getElementById('logoutBtn')?.addEventListener('click', handleLogout);
+
+        if (currentUser.role === 'ADMIN') {
+          adminNav?.classList.remove('hidden');
+          adminNav?.classList.add('flex');
+          mobileAdminNav?.classList.remove('hidden');
+          document.getElementById('adminUserBadge').textContent = currentUser.name + ' (Admin)';
+        } else {
+          adminNav?.classList.add('hidden');
+          adminNav?.classList.remove('flex');
+          mobileAdminNav?.classList.add('hidden');
+        }
+
+        const reporterInput = document.getElementById('formReporterName');
+        if (reporterInput) reporterInput.value = currentUser.name;
+
+        renderUserProfile();
+      }
+    }
+
+    function handleLogout() {
+      setCurrentUser(null);
+      showToast('Logged out successfully', 'info');
+    }
+
+    /* ==========================================================================
+       3. PERSONALISED PROFILE PAGE RENDERER
+       ========================================================================== */
+    function renderUserProfile() {
+      if (!currentUser) return;
+
+      document.getElementById('profileAvatarBadge').textContent = currentUser.name.charAt(0).toUpperCase();
+      document.getElementById('profileDisplayName').textContent = currentUser.name;
+      document.getElementById('profileEmail').textContent = currentUser.email;
+      document.getElementById('profileRoleBadge').textContent = currentUser.role === 'ADMIN' ? 'System Administrator' : 'Community Member';
+
+      document.getElementById('editProfileName').value = currentUser.name;
+
+      const myReports = reportsData.filter(r => (r.reporterEmail && r.reporterEmail.toLowerCase() === currentUser.email.toLowerCase()) || r.reporterName === currentUser.name);
+      const myCollected = myReports.filter(r => r.status === 'Collected').reduce((sum, r) => sum + r.quantity, 0);
+      const myPending = myReports.filter(r => r.status === 'Pending').length;
+
+      document.getElementById('userStatReports').textContent = myReports.length;
+      document.getElementById('userStatCollected').textContent = myCollected;
+      document.getElementById('userStatPending').textContent = myPending;
+
+      const tbody = document.getElementById('userReportsTableBody');
+      if (myReports.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="4" class="p-6 text-center text-slate-400 font-medium">You haven't submitted any waste reports yet.</td></tr>`;
+        return;
+      }
+
+      tbody.innerHTML = myReports.map(r => {
+        let badgeClass = 'bg-rose-100 text-rose-800 border-rose-200';
+        if (r.status === 'In Progress') badgeClass = 'bg-amber-100 text-amber-800 border-amber-200';
+        if (r.status === 'Collected') badgeClass = 'bg-emerald-100 text-emerald-800 border-emerald-200';
+
+        return `
+          <tr class="hover:bg-slate-50 transition-colors">
+            <td class="p-3">
+              <div class="font-bold text-slate-900">${r.location}</div>
+              <div class="text-[10px] text-slate-400 font-mono">ID: ${r.id}</div>
+            </td>
+            <td class="p-3">
+              <div class="font-semibold text-slate-800">${r.plasticType}</div>
+              <div class="text-[10px] text-slate-500">${r.quantity} items</div>
+            </td>
+            <td class="p-3">
+              <span class="px-2.5 py-0.5 rounded-full border text-[10px] font-extrabold ${badgeClass}">
+                ${r.status}
+              </span>
+            </td>
+            <td class="p-3 text-right">
+              <button onclick="viewReportOnMap('${r.id}')" class="p-1.5 rounded-lg text-emerald-700 hover:bg-emerald-50 text-xs font-bold">
+                <i class="fa-solid fa-crosshairs"></i>
+              </button>
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    document.getElementById('profileLogoutBtn')?.addEventListener('click', handleLogout);
+
+    document.getElementById('updateProfileForm')?.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      if (!currentUser) return;
+
+      const newName = document.getElementById('editProfileName').value.trim();
+      const newPass = document.getElementById('editProfilePassword').value.trim();
+
+      currentUser.name = newName;
+      if (newPass) currentUser.password = newPass;
+
+      await dbPut('users', currentUser);
+      setCurrentUser(currentUser);
+      document.getElementById('editProfilePassword').value = '';
+      showToast('Profile updated in database!', 'success');
+      refreshAllUI();
+    });
+
+    /* ==========================================================================
+       4. INTERACTIVE CANVAS MAP LOGIC
+       ========================================================================== */
+    const mapCanvas = document.getElementById('wasteMapCanvas');
+    const ctx = mapCanvas.getContext('2d');
+
+    function resizeMapCanvas() {
+      if (!mapCanvas || !mapCanvas.parentElement) return;
+      const rect = mapCanvas.parentElement.getBoundingClientRect();
+      mapCanvas.width = rect.width;
+      mapCanvas.height = rect.height;
+      drawMap();
+    }
+
+    function drawMap() {
+      if (!mapCanvas.width || !mapCanvas.height) return;
+      const w = mapCanvas.width;
+      const h = mapCanvas.height;
+
+      ctx.fillStyle = '#e2ece7';
+      ctx.fillRect(0, 0, w, h);
+
+      ctx.strokeStyle = 'rgba(7, 59, 41, 0.08)';
+      ctx.lineWidth = 1;
+      const gridSize = 30;
+      for (let x = 0; x < w; x += gridSize) {
+        ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, h); ctx.stroke();
+      }
+      for (let y = 0; y < h; y += gridSize) {
+        ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(w, y); ctx.stroke();
+      }
+
+      ctx.fillStyle = 'rgba(12, 165, 106, 0.12)';
+      ctx.beginPath(); ctx.arc(w * 0.3, h * 0.4, 70, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.arc(w * 0.7, h * 0.6, 90, 0, Math.PI * 2); ctx.fill();
+
+      ctx.fillStyle = '#073b29';
+      ctx.font = '600 11px "Plus Jakarta Sans", sans-serif';
+      ctx.fillText('Canteen Hub', w * 0.25, h * 0.4);
+      ctx.fillText('Academic Lawn', w * 0.62, h * 0.6);
+
+      const filterStatus = document.getElementById('mapFilterStatus').value;
+      const filtered = reportsData.filter(r => filterStatus === 'ALL' || r.status === filterStatus);
+
+      if (selectedMapPoint) {
+        const px = (selectedMapPoint.geoX / 100) * w;
+        const py = (selectedMapPoint.geoY / 100) * h;
+        
+        ctx.strokeStyle = '#087443';
+        ctx.lineWidth = 2;
+        ctx.setLineDash([4, 4]);
+        ctx.beginPath();
+        ctx.moveTo(w * 0.05, h * 0.9);
+        ctx.lineTo(px, py);
+        ctx.stroke();
+        ctx.setLineDash([]);
+      }
+
+      filtered.forEach(r => {
+        const mx = (r.geoX / 100) * w;
+        const my = (r.geoY / 100) * h;
+
+        let color = '#ef4444';
+        if (r.status === 'In Progress') color = '#f59e0b';
+        if (r.status === 'Collected') color = '#059669';
+
+        const isSelected = selectedMapPoint && selectedMapPoint.id === r.id;
+
+        if (isSelected) {
+          ctx.beginPath();
+          ctx.arc(mx, my, 18, 0, Math.PI * 2);
+          ctx.fillStyle = 'rgba(12, 165, 106, 0.3)';
+          ctx.fill();
+        }
+
+        ctx.beginPath();
+        ctx.arc(mx, my, isSelected ? 10 : 8, 0, Math.PI * 2);
+        ctx.fillStyle = color;
+        ctx.fill();
+        ctx.lineWidth = 2;
+        ctx.strokeStyle = '#ffffff';
+        ctx.stroke();
+      });
+    }
+
+    mapCanvas.addEventListener('click', (e) => {
+      const rect = mapCanvas.getBoundingClientRect();
+      const clickX = e.clientX - rect.left;
+      const clickY = e.clientY - rect.top;
+      const pctX = Math.round((clickX / rect.width) * 100);
+      const pctY = Math.round((clickY / rect.height) * 100);
+
+      let hit = null;
+      reportsData.forEach(r => {
+        const rx = (r.geoX / 100) * rect.width;
+        const ry = (r.geoY / 100) * rect.height;
+        const dist = Math.hypot(clickX - rx, clickY - ry);
+        if (dist < 18) hit = r;
+      });
+
+      if (hit) {
+        selectedMapPoint = hit;
+        renderMapDetailCard(hit);
+      } else {
+        document.getElementById('formGeoX').value = pctX;
+        document.getElementById('formGeoY').value = pctY;
+        document.getElementById('mapSelectedCoords').textContent = `X: ${pctX}%, Y: ${pctY}%`;
+        showToast(`Selected map coordinates: X:${pctX}%, Y:${pctY}%`, 'info');
+      }
+      drawMap();
+    });
+
+    function renderMapDetailCard(report) {
+      const container = document.getElementById('mapDetailCard');
+      let statusColor = 'bg-rose-100 text-rose-800 border-rose-300';
+      if (report.status === 'In Progress') statusColor = 'bg-amber-100 text-amber-800 border-amber-300';
+      if (report.status === 'Collected') statusColor = 'bg-emerald-100 text-emerald-800 border-emerald-300';
+
+      container.innerHTML = `
+        <div class="space-y-3">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-black uppercase tracking-wider text-slate-400">ID: ${report.id}</span>
+            <span class="px-2.5 py-1 rounded-full text-[10px] font-extrabold border ${statusColor}">
+              ${report.status}
+            </span>
+          </div>
+
+          <div>
+            <h4 class="font-extrabold text-slate-900 text-base">${report.location}</h4>
+            <p class="text-xs text-slate-500 font-semibold">${report.plasticType} • approx ${report.quantity} items</p>
+          </div>
+
+          <div class="p-3 bg-white rounded-xl border border-slate-200 text-xs space-y-1">
+            <div><strong class="text-slate-700">Reporter:</strong> ${report.reporterName}</div>
+            <div><strong class="text-slate-700">Category:</strong> <span class="capitalize">${report.category}</span></div>
+            <div><strong class="text-slate-700">Filed:</strong> ${new Date(report.createdAt).toLocaleString()}</div>
+            ${report.notes ? `<div class="pt-1 text-slate-500 italic">"${report.notes}"</div>` : ''}
+          </div>
+
+          ${report.photoData ? `<img src="${report.photoData}" class="w-full h-32 object-cover rounded-xl border border-slate-200">` : ''}
+        </div>
+      `;
+    }
+
+    /* ==========================================================================
+       5. REPORTS TABLE & FILTERS
+       ========================================================================== */
+    function renderReportsTable() {
+      const tbody = document.getElementById('reportsTableBody');
+      const keyword = document.getElementById('reportSearchKeyword').value.toLowerCase();
+      const typeFilter = document.getElementById('reportFilterType').value;
+      const statusFilter = document.getElementById('reportFilterStatus').value;
+      const catFilter = document.getElementById('reportFilterCategory').value;
+
+      const filtered = reportsData.filter(r => {
+        const matchesKw = (r.location + ' ' + r.reporterName + ' ' + (r.notes||'')).toLowerCase().includes(keyword);
+        const matchesType = typeFilter === 'ALL' || r.plasticType === typeFilter;
+        const matchesStatus = statusFilter === 'ALL' || r.status === statusFilter;
+        const matchesCat = catFilter === 'ALL' || r.category === catFilter;
+        return matchesKw && matchesType && matchesStatus && matchesCat;
+      });
+
+      if (filtered.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="5" class="p-8 text-center text-slate-400 font-medium">No waste reports match your filter criteria.</td></tr>`;
+        return;
+      }
+
+      tbody.innerHTML = filtered.map(r => {
+        let badgeClass = 'bg-rose-100 text-rose-800 border-rose-200';
+        if (r.status === 'In Progress') badgeClass = 'bg-amber-100 text-amber-800 border-amber-200';
+        if (r.status === 'Collected') badgeClass = 'bg-emerald-100 text-emerald-800 border-emerald-200';
+
+        return `
+          <tr class="hover:bg-slate-50 transition-colors">
+            <td class="p-3">
+              <div class="font-extrabold text-slate-900">${r.location}</div>
+              <div class="text-[10px] text-slate-400 font-mono">ID: ${r.id}</div>
+            </td>
+            <td class="p-3">
+              <div class="font-bold text-slate-800">${r.plasticType}</div>
+              <div class="text-[11px] text-slate-500">${r.quantity} items</div>
+            </td>
+            <td class="p-3">
+              <span class="px-2 py-0.5 rounded-lg border text-[10px] font-extrabold uppercase bg-slate-100 text-slate-800">
+                ${r.category}
+              </span>
+            </td>
+            <td class="p-3">
+              <span class="px-2.5 py-1 rounded-full border text-[10px] font-extrabold ${badgeClass}">
+                ${r.status}
+              </span>
+            </td>
+            <td class="p-3 text-right">
+              <button onclick="viewReportOnMap('${r.id}')" class="p-1.5 rounded-lg text-emerald-700 hover:bg-emerald-50 text-xs font-bold">
+                <i class="fa-solid fa-crosshairs"></i>
+              </button>
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    window.viewReportOnMap = (id) => {
+      const rep = reportsData.find(x => x.id === id);
+      if (rep) {
+        selectedMapPoint = rep;
+        renderMapDetailCard(rep);
+        drawMap();
+        document.getElementById('map-section').scrollIntoView({ behavior: 'smooth' });
+      }
+    };
+
+    /* ==========================================================================
+       6. ADMIN OPERATIONS
+       ========================================================================== */
+    function renderAdminQueue() {
+      const tbody = document.getElementById('adminQueueTableBody');
+      if (!tbody) return;
+
+      tbody.innerHTML = reportsData.map(r => `
+        <tr class="hover:bg-slate-900/60 border-b border-slate-800">
+          <td class="p-3 font-bold text-white">
+            ${r.location}
+            <div class="text-[10px] text-slate-400 font-normal">${r.plasticType} (${r.quantity} pcs)</div>
+          </td>
+          <td class="p-3 text-slate-300 text-xs">${r.reporterName}</td>
+          <td class="p-3 font-extrabold text-amber-300">${r.status}</td>
+          <td class="p-3">
+            <select onchange="updateReportStatus('${r.id}', this.value)" class="bg-slate-800 text-xs text-white rounded-lg px-2 py-1 border border-slate-700 focus:outline-none focus:ring-1 focus:ring-amber-400">
+              <option value="Pending" ${r.status==='Pending'?'selected':''}>Pending</option>
+              <option value="In Progress" ${r.status==='In Progress'?'selected':''}>In Progress</option>
+              <option value="Collected" ${r.status==='Collected'?'selected':''}>Collected</option>
+            </select>
+          </td>
+          <td class="p-3 text-right">
+            <button onclick="deleteReportRecord('${r.id}')" class="text-rose-400 hover:text-rose-300 font-bold p-1">
+              <i class="fa-solid fa-trash-can"></i>
+            </button>
+          </td>
+        </tr>
+      `).join('');
+    }
+
+    window.updateReportStatus = async (id, newStatus) => {
+      const rep = reportsData.find(x => x.id === id);
+      if (rep) {
+        rep.status = newStatus;
+        await dbPut('reports', rep);
+        addActivityLog(`[STATUS UPDATE] ${rep.location} -> ${newStatus}`);
+        addNotification(`Status for "${rep.location}" updated to ${newStatus}`);
+        showToast(`Status updated to ${newStatus}`, 'success');
+        refreshAllUI();
+      }
+    };
+
+    window.deleteReportRecord = async (id) => {
+      if (!confirm('Are you sure you want to delete this report record from the database?')) return;
+      await dbDelete('reports', id);
+      addActivityLog(`[DELETE] Report ID: ${id} removed from database`);
+      showToast('Report deleted from database', 'info');
+      await refreshData();
+      refreshAllUI();
+    };
+
+    function addActivityLog(msg) {
+      const logBox = document.getElementById('adminActivityLog');
+      const time = new Date().toLocaleTimeString();
+      const entry = `<div><span class="text-slate-500">[${time}]</span> ${msg}</div>`;
+      activityLogs.unshift(entry);
+      if (logBox) logBox.innerHTML = activityLogs.join('');
+    }
+
+    /* ==========================================================================
+       7. MANDATORY AUTH FORM HANDLERS
+       ========================================================================== */
+    document.getElementById('gateTabLoginBtn')?.addEventListener('click', () => {
+      document.getElementById('gateLoginForm').classList.remove('hidden');
+      document.getElementById('gateRegisterForm').classList.add('hidden');
+      document.getElementById('gateTabLoginBtn').className = 'flex-1 py-3 text-center border-b-2 border-emerald-600 text-emerald-800 bg-emerald-50/50';
+      document.getElementById('gateTabRegisterBtn').className = 'flex-1 py-3 text-center text-slate-500 hover:text-slate-800';
+    });
+
+    document.getElementById('gateTabRegisterBtn')?.addEventListener('click', () => {
+      document.getElementById('gateLoginForm').classList.add('hidden');
+      document.getElementById('gateRegisterForm').classList.remove('hidden');
+      document.getElementById('gateTabRegisterBtn').className = 'flex-1 py-3 text-center border-b-2 border-emerald-600 text-emerald-800 bg-emerald-50/50';
+      document.getElementById('gateTabLoginBtn').className = 'flex-1 py-3 text-center text-slate-500 hover:text-slate-800';
+    });
+
+    document.getElementById('gateLoginForm')?.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const email = document.getElementById('gateLoginEmail').value.trim();
+      const pass = document.getElementById('gateLoginPassword').value.trim();
+
+      const users = await dbGetAll('users');
+      const found = users.find(u => u.email.toLowerCase() === email.toLowerCase() && u.password === pass);
+
+      if (found) {
+        setCurrentUser(found);
+        showToast(`Welcome back, ${found.name}!`, 'success');
+        refreshAllUI();
+      } else {
+        showToast('Invalid credentials. Please try again.', 'error');
+      }
+    });
+
+    document.getElementById('gateRegisterForm')?.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const name = document.getElementById('gateRegName').value.trim();
+      const email = document.getElementById('gateRegEmail').value.trim();
+      const password = document.getElementById('gateRegPassword').value.trim();
+      const role = document.getElementById('gateRegRole').value;
+
+      const newUser = { id: 'u_' + Date.now(), name, email, password, role };
+      await dbPut('users', newUser);
+      setCurrentUser(newUser);
+      showToast('Account registered and saved to database!', 'success');
+      refreshAllUI();
+    });
+
+    /* ==========================================================================
+       8. EXPORTS, NOTIFICATIONS, BIN FINDER & CHARTS
+       ========================================================================== */
+    document.getElementById('exportCsvBtn').addEventListener('click', () => {
+      if (reportsData.length === 0) return showToast('No reports to export', 'error');
+      const headers = ['ID', 'ReporterName', 'ReporterEmail', 'Location', 'GeoX', 'GeoY', 'PlasticType', 'Quantity', 'Category', 'Status', 'Notes', 'CreatedAt'];
+      const rows = reportsData.map(r => [
+        `"${r.id}"`, `"${r.reporterName}"`, `"${r.reporterEmail||''}"`, `"${r.location}"`, r.geoX, r.geoY,
+        `"${r.plasticType}"`, r.quantity, `"${r.category}"`, `"${r.status}"`, `"${(r.notes||'').replace(/"/g, '""')}"`, `"${r.createdAt}"`
+      ]);
+
+      const csvContent = 'data:text/csv;charset=utf-8,\uFEFF' + [headers.join(','), ...rows.map(e => e.join(','))].join('\n');
+      const encodedUri = encodeURI(csvContent);
+      const link = document.createElement('a');
+      link.setAttribute('href', encodedUri);
+      link.setAttribute('download', `EcoImpact_Database_Export_${Date.now()}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      showToast('Exported CSV from database', 'success');
+    });
+
+    document.getElementById('exportJsonBtn').addEventListener('click', () => {
+      if (reportsData.length === 0) return showToast('No reports to export', 'error');
+      const dataStr = 'data:text/json;charset=utf-8,' + encodeURIComponent(JSON.stringify(reportsData, null, 2));
+      const link = document.createElement('a');
+      link.setAttribute('href', dataStr);
+      link.setAttribute('download', `EcoImpact_Database_Export_${Date.now()}.json`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      showToast('Exported JSON dump from database', 'success');
+    });
+
+    function addNotification(msg) {
+      notifsList.unshift({ id: Date.now(), text: msg, time: new Date().toLocaleTimeString() });
+      updateNotifsUI();
+    }
+
+    function updateNotifsUI() {
+      const badge = document.getElementById('notifBadge');
+      const list = document.getElementById('notifList');
+
+      if (notifsList.length > 0) {
+        badge.textContent = notifsList.length;
+        badge.classList.remove('hidden');
+        list.innerHTML = notifsList.map(n => `
+          <div class="p-3 hover:bg-slate-50 transition-colors">
+            <p class="font-bold text-slate-800 text-xs">${n.text}</p>
+            <span class="text-[10px] text-slate-400 font-mono">${n.time}</span>
+          </div>
+        `).join('');
+      } else {
+        badge.classList.add('hidden');
+        list.innerHTML = `<p class="text-slate-400 p-4 text-center">No notifications yet.</p>`;
+      }
+    }
+
+    document.getElementById('notifBellBtn')?.addEventListener('click', () => {
+      document.getElementById('notifDropdown').classList.toggle('hidden');
+    });
+
+    document.getElementById('clearNotifsBtn')?.addEventListener('click', () => {
+      notifsList = [];
+      updateNotifsUI();
+    });
+
+    const BIN_ITEMS = [
+      { name: 'PET Water Bottle', cat: 'dry', desc: 'Empty, rinse, crush bottle and place in blue dry bin.' },
+      { name: 'Food Carry Bag', cat: 'dry', desc: 'Ensure bag is clean and dry before putting in blue bin.' },
+      { name: 'Leftover Rice/Curry', cat: 'wet', desc: 'Drain extra liquid and deposit directly into green wet bin.' },
+      { name: 'Fruit Peels', cat: 'wet', desc: 'Direct compostable wet waste for green organic bin.' },
+      { name: 'Oily Snack Wrapper', cat: 'mixed', desc: 'Wipe off heavy food grease. If heavily soiled, put in mixed waste bin.' },
+      { name: 'Sanitary Waste', cat: 'hazardous', desc: 'Wrap securely in paper and hand over in red hazardous bin.' }
+    ];
+
+    function initBinFinder() {
+      const container = document.getElementById('binFinderButtons');
+      if (!container) return;
+      container.innerHTML = BIN_ITEMS.map((item, idx) => `
+        <button onclick="selectBinItem(${idx})" class="px-3 py-2 rounded-xl bg-white/10 hover:bg-white/20 border border-white/20 text-xs font-bold text-white transition-all">
+          ${item.name}
+        </button>
+      `).join('');
+    }
+
+    window.selectBinItem = (idx) => {
+      const item = BIN_ITEMS[idx];
+      document.getElementById('binFinderTitle').textContent = `${item.name} → Target: ${item.cat.toUpperCase()} BIN`;
+      document.getElementById('binFinderDesc').textContent = item.desc;
+    };
+
+    let categoryChartInstance = null;
+    let statusChartInstance = null;
+
+    function renderCharts() {
+      const catCtx = document.getElementById('categoryChart')?.getContext('2d');
+      const statCtx = document.getElementById('statusChart')?.getContext('2d');
+
+      if (!catCtx || !statCtx) return;
+
+      const typeCounts = {};
+      reportsData.forEach(r => {
+        typeCounts[r.plasticType] = (typeCounts[r.plasticType] || 0) + r.quantity;
+      });
+
+      const pendingCount = reportsData.filter(r => r.status === 'Pending').length;
+      const progCount = reportsData.filter(r => r.status === 'In Progress').length;
+      const doneCount = reportsData.filter(r => r.status === 'Collected').length;
+
+      if (categoryChartInstance) categoryChartInstance.destroy();
+      categoryChartInstance = new Chart(catCtx, {
+        type: 'bar',
+        data: {
+          labels: Object.keys(typeCounts),
+          datasets: [{ label: 'Plastic Items', data: Object.values(typeCounts), backgroundColor: '#0ca56a', borderRadius: 8 }]
+        },
+        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
+      });
+
+      if (statusChartInstance) statusChartInstance.destroy();
+      statusChartInstance = new Chart(statCtx, {
+        type: 'doughnut',
+        data: {
+          labels: ['Pending', 'In Progress', 'Collected'],
+          datasets: [{ data: [pendingCount, progCount, doneCount], backgroundColor: ['#ef4444', '#f59e0b', '#059669'] }]
+        },
+        options: { responsive: true, maintainAspectRatio: false }
+      });
+    }
+
+    /* ==========================================================================
+       9. REPORT FORM SUBMISSION
+       ========================================================================== */
+    let uploadedPhotoData = null;
+
+    document.getElementById('formPhoto')?.addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (file) {
+        if (file.size > 5 * 1024 * 1024) return showToast('File exceeds 5MB limit', 'error');
+        const reader = new FileReader();
+        reader.onload = (evt) => {
+          uploadedPhotoData = evt.target.result;
+          document.getElementById('uploadImgPreview').src = uploadedPhotoData;
+          document.getElementById('uploadFileName').textContent = file.name;
+          document.getElementById('uploadPrompt').classList.add('hidden');
+          document.getElementById('uploadPreviewContainer').classList.remove('hidden');
+        };
+        reader.readAsDataURL(file);
+      }
+    });
+
+    document.getElementById('removePhotoBtn')?.addEventListener('click', () => {
+      uploadedPhotoData = null;
+      document.getElementById('formPhoto').value = '';
+      document.getElementById('uploadPrompt').classList.remove('hidden');
+      document.getElementById('uploadPreviewContainer').classList.add('hidden');
+    });
+
+    document.getElementById('wasteReportForm')?.addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      const reporterName = currentUser ? currentUser.name : document.getElementById('formReporterName').value.trim();
+      const reporterEmail = currentUser ? currentUser.email : '';
+      const location = document.getElementById('formLocation').value.trim();
+      const geoX = parseFloat(document.getElementById('formGeoX').value) || Math.floor(Math.random() * 80 + 10);
+      const geoY = parseFloat(document.getElementById('formGeoY').value) || Math.floor(Math.random() * 80 + 10);
+      const plasticType = document.getElementById('formPlasticType').value;
+      const quantity = parseInt(document.getElementById('formQuantity').value, 10);
+      const category = document.querySelector('input[name="formCategory"]:checked').value;
+      const notes = document.getElementById('formNotes').value.trim();
+
+      const newReport = {
+        id: 'rep-' + Date.now().toString().slice(-4),
+        reporterName,
+        reporterEmail,
+        location,
+        geoX,
+        geoY,
+        plasticType,
+        quantity,
+        category,
+        status: 'Pending',
+        notes,
+        photoData: uploadedPhotoData,
+        createdAt: new Date().toISOString()
+      };
+
+      await dbPut('reports', newReport);
+      addActivityLog(`[NEW REPORT] "${location}" by ${reporterName}`);
+      addNotification(`New report filed at "${location}"`);
+
+      showToast('Waste report saved to database!', 'success');
+      document.getElementById('wasteReportForm').reset();
+      document.getElementById('removePhotoBtn')?.click();
+
+      await refreshData();
+      refreshAllUI();
+    });
+
+    /* ==========================================================================
+       10. APP LIFECYCLE
+       ========================================================================== */
+    async function refreshData() {
+      reportsData = await dbGetAll('reports');
+    }
+
+    function refreshAllUI() {
+      const totalCount = reportsData.length;
+      const collectedItems = reportsData.filter(r => r.status === 'Collected').reduce((s, r) => s + r.quantity, 0);
+      const pendingItems = reportsData.filter(r => r.status === 'Pending').reduce((s, r) => s + r.quantity, 0);
+
+      document.getElementById('heroTotalReports').textContent = totalCount;
+      document.getElementById('heroCollectedQty').textContent = collectedItems;
+      document.getElementById('heroPendingQty').textContent = pendingItems;
+
+      dbGetAll('users').then(users => {
+        document.getElementById('heroActiveUsers').textContent = users.length;
+      });
+
+      renderUserProfile();
+      renderReportsTable();
+      renderAdminQueue();
+      drawMap();
+      renderCharts();
+    }
+
+    function showToast(msg, type = 'info') {
+      const container = document.getElementById('toastContainer');
+      const toast = document.createElement('div');
+      let bgColor = 'bg-slate-900 text-white';
+      if (type === 'success') bgColor = 'bg-emerald-600 text-white';
+      if (type === 'error') bgColor = 'bg-rose-600 text-white';
+
+      toast.className = `${bgColor} px-4 py-3 rounded-2xl shadow-2xl text-xs font-bold border border-white/20 transition-all transform translate-y-2 opacity-0 flex items-center justify-between gap-3 pointer-events-auto`;
+      toast.innerHTML = `<span>${msg}</span><button onclick="this.parentElement.remove()" class="text-white/80 hover:text-white">&times;</button>`;
+      
+      container.appendChild(toast);
+      setTimeout(() => toast.classList.remove('translate-y-2', 'opacity-0'), 10);
+      setTimeout(() => {
+        toast.classList.add('opacity-0');
+        setTimeout(() => toast.remove(), 300);
+      }, 3500);
+    }
+
+    ['reportSearchKeyword', 'reportFilterType', 'reportFilterStatus', 'reportFilterCategory'].forEach(id => {
+      document.getElementById(id)?.addEventListener('input', renderReportsTable);
+      document.getElementById(id)?.addEventListener('change', renderReportsTable);
+    });
+
+    document.getElementById('mapFilterStatus')?.addEventListener('change', drawMap);
+
+    const mobileMenuBtn = document.getElementById('mobileMenuBtn');
+    const mobileDrawer = document.getElementById('mobileDrawer');
+    mobileMenuBtn?.addEventListener('click', () => mobileDrawer.classList.toggle('hidden'));
+    document.querySelectorAll('.mobile-nav-link').forEach(link => link.addEventListener('click', () => mobileDrawer.classList.add('hidden')));
+
+    window.addEventListener('resize', resizeMapCanvas);
+
+    window.addEventListener('load', async () => {
+      const isDbReady = await initDatabase();
+      if (isDbReady) {
+        document.getElementById('dbStatusBadge')?.classList.remove('hidden');
+      }
+      await refreshData();
+      loadSession();
+      initBinFinder();
+      resizeMapCanvas();
+      refreshAllUI();
+      addActivityLog('[SYSTEM] EcoImpact Platform initialized with persistent client database.');
+    });
+  </script>
+</body>
+</html>
